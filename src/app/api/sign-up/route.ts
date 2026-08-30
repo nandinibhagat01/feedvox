@@ -36,13 +36,14 @@ export async function POST(request: Request) {
         const hashedPassword = await bcrypt.hash(password, 10);
         existingUserByEmail.password = hashedPassword;
         existingUserByEmail.verifyCode = verifyCode;
-        existingUserByEmail.verifyCodeExpiry = new Date(Date.now() + 3600000);
+        existingUserByEmail.verifyCodeExpiry = new Date(
+          Date.now() + 10 * 60 * 1000,
+        );
         await existingUserByEmail.save();
       }
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
-      const expiryDate = new Date();
-      expiryDate.setHours(expiryDate.getHours() + 1);
+      const expiryDate = new Date(Date.now() + 10 * 60 * 1000);
       const newUser = new UserModel({
         username,
         email,
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         success: true,
-        message: "User verified successfully. Please verify your email.",
+        message: "User registered successfully. Please verify your email.",
       },
       { status: 201 },
     );
