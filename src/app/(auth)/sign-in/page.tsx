@@ -72,7 +72,7 @@ const page = () => {
               <Input
                 id="identifier"
                 type="text"
-                autoComplete="email"
+                autoComplete="username"
                 placeholder="Enter your Username or Email"
                 className="h-11 rounded-xl border-gray-200 bg-gray-50/50 pl-10 pr-4 transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                 {...form.register("identifier")}
