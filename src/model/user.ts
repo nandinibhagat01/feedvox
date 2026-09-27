@@ -1,11 +1,17 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface Message {
+  _id: mongoose.Types.ObjectId;
+  title: string;
   content: string;
   createdAt: Date;
 }
 
 const MessageSchema: Schema<Message> = new Schema({
+  title: {
+    type: String,
+    required: true,
+  },
   content: {
     type: String,
     required: true,
