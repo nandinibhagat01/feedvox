@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { User } from "next-auth";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,12 +15,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { LogOut, Settings, User2 } from "lucide-react";
 
 const Navbar = () => {
   const { data: session } = useSession();
   const user = session?.user as User | undefined;
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/60 bg-white/70 shadow-sm shadow-indigo-100/30 backdrop-blur-xl">
@@ -42,23 +53,38 @@ const Navbar = () => {
           {session ? (
             <>
               {/* User */}
-              <div className="hidden items-center rounded-full border border-indigo-100 bg-indigo-50/60 px-4 py-2 sm:flex">
-                <span className="text-sm font-medium text-gray-700">
-                  Welcome,{" "}
-                  <span className="font-semibold text-indigo-600">
-                    {user?.username || user?.email}
-                  </span>
-                </span>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="rounded-xl px-4 py-2 font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                  {user?.username || user?.email}
+                </DropdownMenuTrigger>
 
-              {/* Logout Confirmation */}
-              <AlertDialog>
-                <AlertDialogTrigger>
-                  <Button className="rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md">
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                    <User2 className="mr-2 h-4 w-4" />
+                    My Profile
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => router.push("/settings")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={() => setLogoutDialogOpen(true)}
+                    className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
                     Logout
-                  </Button>
-                </AlertDialogTrigger>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
+              <AlertDialog
+                open={logoutDialogOpen}
+                onOpenChange={setLogoutDialogOpen}
+              >
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
