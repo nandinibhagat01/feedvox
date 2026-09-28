@@ -4,6 +4,17 @@ import { useSession, signOut } from "next-auth/react";
 import { User } from "next-auth";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 const Navbar = () => {
   const { data: session } = useSession();
@@ -12,7 +23,6 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-white/60 bg-white/70 shadow-sm shadow-indigo-100/30 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        
         {/* Logo */}
         <Link
           href="/"
@@ -41,13 +51,37 @@ const Navbar = () => {
                 </span>
               </div>
 
-              {/* Logout */}
-              <Button
-                onClick={() => signOut()}
-                className="rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md"
-              >
-                Logout
-              </Button>
+              {/* Logout Confirmation */}
+              <AlertDialog>
+                <AlertDialogTrigger>
+                  <Button className="rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md">
+                    Logout
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you sure you want to log out?
+                    </AlertDialogTitle>
+
+                    <AlertDialogDescription>
+                      You will need to log in again to access your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                    <AlertDialogAction
+                      onClick={() => signOut()}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           ) : (
             <Link href="/sign-in">
