@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface Message {
-  _id: mongoose.Types.ObjectId;
+  _id?: mongoose.Types.ObjectId;
   title: string;
   content: string;
   createdAt: Date;

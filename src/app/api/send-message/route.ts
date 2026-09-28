@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   await dbConnect();
 
   try {
-    const { username, content } = await request.json();
+    const { username, title, content } = await request.json();
 
     const user = await UserModel.findOne({ username });
     if (!user) {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         },
       );
     }
-    const newMessage = { content, createdAt: new Date() };
+    const newMessage = { title, content, createdAt: new Date() };
 
     user.messages.push(newMessage);
     await user.save();

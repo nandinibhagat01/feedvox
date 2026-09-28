@@ -1,42 +1,72 @@
+import { NextResponse } from "next/server";
+
 export async function POST(request: Request) {
   try {
-    const prompt = `
-Create a list of three open-ended and engaging questions formatted as a single string. 
-Each question should be separated by '||'.
+    const body = await request.json().catch(() => ({}));
 
-These questions are for an anonymous social messaging platform, like Qooh.me, 
-and should be suitable for a diverse audience.
+    const prompt =
+      body?.prompt ||
+      "Generate 3 interesting anonymous questions for a friend.";
 
-Avoid personal or sensitive topics, focusing instead on universal themes that 
-encourage friendly interaction.
+    const apiKey = process.env.KIE_API_KEY;
 
-For example, your output should be structured like this:
+    if (!apiKey) {
+      console.error("KIE_API_KEY is missing");
 
-"What's a hobby you've recently started? || If you could have dinner with any historical figure, who would it be? || What's a simple thing that makes you happy?"
-
-Ensure the questions are intriguing, foster curiosity, and contribute to a 
-positive and welcoming conversational environment.
-
-Return only the three questions separated by '||'.
-Do not add numbers, bullet points, quotation marks, or any additional explanation.
-`;
+      return NextResponse.json(
+        {
+          success: false,
+          message: "KIE API key is not configured",
+        },
+        { status: 500 },
+      );
+    }
 
     const response = await fetch(
-      "https://api.kie.ai/gemini/v1/models/gemini-3-8-flash:streamGenerateContent",
+      "https://api.kie.ai/gemini/v1/models/gemini-3-8-flash:generateContent",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.KIE_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          stream: false,
           contents: [
             {
               role: "user",
               parts: [
                 {
-                  text: prompt,
+                  text: `
+
+
+Generate exactly 3 interesting and friendly anonymous questions.
+
+Rules:
+
+Return ONLY the 3 questions.
+
+Separate each question with ||.
+
+Do NOT use numbers.
+
+Do NOT use bullet points.
+
+Do NOT use markdown.
+
+Do NOT add explanations.
+
+Do NOT add quotation marks.
+
+Keep each question reasonably short.
+
+Avoid sensitive or inappropriate topics.
+
+Example:
+What's a hobby you've recently started? || If you could learn any new skill, what would it be? || What's something that always makes you smile?
+
+User request:
+${prompt}
+`.trim(),
                 },
               ],
             },
@@ -47,53 +77,118 @@ Do not add numbers, bullet points, quotation marks, or any additional explanatio
 
     const data = await response.json();
 
-    console.log("KIE status:", response.status);
-    console.log("KIE response:", data);
+    console.log("KIE HTTP status:", response.status);
+    console.log("KIE response:", JSON.stringify(data, null, 2));
 
     if (!response.ok) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
           message: "KIE API request failed",
           error: data,
         },
+        { status: response.status },
+      );
+    }
+
+    /*
+     * KIE can return an HTTP 200 while the model/API itself
+     * reports an internal error using code: 500.
+     */
+    if (data?.code && data.code !== 200) {
+      return NextResponse.json(
         {
-          status: response.status,
+          success: false,
+          message: data.msg || "KIE API request failed",
+          error: data,
         },
+        { status: 502 },
       );
     }
 
     const text =
       data?.candidates?.[0]?.content?.parts
         ?.map((part: { text?: string }) => part.text || "")
-        .join("") || "";
+        .join("")
+        .trim() || "";
 
-    const suggestions = text
+    if (!text) {
+      console.error("KIE returned no generated text");
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "KIE returned an empty response",
+        },
+        { status: 502 },
+      );
+    }
+
+    /*
+     * First try the requested || format.
+     */
+    let suggestions = text
       .split("||")
-      .map((question: string) => question.trim())
-      .filter((question: string) => question.length > 0)
+      .map((item: string) => item.trim())
+      .filter(Boolean);
+
+    /*
+     * Fallback:
+     * If the model ignored the || instruction and returned
+     * numbered Markdown questions, extract those questions.
+     */
+    if (suggestions.length < 3) {
+      suggestions = text
+        .split(/\n+/)
+        .map((line: string) =>
+          line
+            .replace(/^\s*\d+[\.\)]\s*/, "")
+            .replace(/\*\*/g, "")
+            .replace(/^["']|["']$/g, "")
+            .trim(),
+        )
+        .filter(
+          (line: string) =>
+            line.length > 10 && !line.startsWith("*") && !line.startsWith("("),
+        );
+    }
+
+    suggestions = suggestions
+      .map((item: string) =>
+        item
+          .replace(/\*\*/g, "")
+          .replace(/^["']|["']$/g, "")
+          .trim(),
+      )
+      .filter(Boolean)
       .slice(0, 3);
 
-    return Response.json(
+    if (suggestions.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Could not parse AI suggestions",
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json(
       {
         success: true,
         suggestions,
       },
-      {
-        status: 200,
-      },
+      { status: 200 },
     );
   } catch (error) {
     console.error("KIE API error:", error);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Failed to generate message suggestions",
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }

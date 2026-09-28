@@ -23,13 +23,16 @@ const dashboard = () => {
 
   const handleDeleteMessage = (messageId: string) => {
     setMessages(
-      messages.filter((message) => message._id.toString() !== messageId),
+      messages.filter((message) => message._id?.toString() !== messageId),
     );
   };
   const { data: session } = useSession();
 
   const form = useForm({
     resolver: zodResolver(acceptMessagesSchema),
+    defaultValues: {
+      acceptMessages: true,
+    },
   });
 
   const { register, watch, setValue } = form;
@@ -40,7 +43,7 @@ const dashboard = () => {
     setIsSwitchLoading(true);
     try {
       const response = await axios.get<ApiResponse>("/api/accept-messages");
-      setValue("acceptMessages", response.data.isAcceptingMessages);
+      setValue("acceptMessages", response.data.isAcceptingMessage ?? true);
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.add({
@@ -237,7 +240,7 @@ const dashboard = () => {
           {messages.length > 0 ? (
             messages.map((message) => (
               <MessageCard
-                key={message._id.toString()}
+                key={message._id?.toString()}
                 message={message}
                 onMessageDelete={handleDeleteMessage}
               />
